@@ -1,9 +1,16 @@
 {
   "output": {
-    "filePath": "PROJECT_INDEX/history/propensity-evaluation_index.md",
+    "filePath": "PROJECT_INDEX/history/propensity-evaluation_{datetime}.md",
     "style": "markdown",
     "showLineNumbers": false,
+    "showDirectoryStructure": true,
     "copyToClipboard": false
+  },
+  "compression": {
+    "enabled": true,
+    "keepSignatures": true,
+    "keepDocstrings": true,
+    "keepInterfaces": true
   },
   "ignore": {
     "useGitignore": true,
@@ -17,7 +24,12 @@
       "**/*.png",
       "**/*.jpg",
       "**/*.svg",
-      "PROJECT_INDEX/**"
+      "**/*.pyc",
+      "__pycache__/**",
+      "*.egg-info/**",
+      "PROJECT_INDEX/**",
+      "*.sh",
+      "update_index.sh"
     ]
   },
   "include": []
