@@ -165,3 +165,7 @@ test*
 *.slurm
 share/
 start_*
+# Data directory (large files, not tracked in git)
+data/
+results/
+generation_output/
