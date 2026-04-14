@@ -44,8 +44,11 @@ __state = {}
 MANAGE_DYNAMIC_STATE = True
 
 
-def kill_subprocesses(sig=signal.SIGKILL):
+def kill_subprocesses(sig=None):
     """Kill all subprocesses of a given process."""
+    import sys
+    if sig is None:
+        sig = signal.SIGKILL if sys.platform != 'win32' else signal.SIGTERM
     try:
         parent = psutil.Process(os.getpid())
     except psutil.NoSuchProcess:
@@ -163,7 +166,8 @@ def load_prev_results(output_file: str):
 if MANAGE_DYNAMIC_STATE:
     os.makedirs(os.path.dirname(__state_file), exist_ok=True)
     signal.signal(signal.SIGTERM, sigterm_handler)
-    signal.signal(signal.SIGCONT, sigcont_handler)
+    if sys.platform != 'win32':
+        signal.signal(signal.SIGCONT, sigcont_handler)
     print('Successfully registered signal handlers for state management.')
 
     try:
@@ -382,7 +386,8 @@ class QueueStream:
 def process_category(category, domain, workspace, role, scenario, args, log_dir):
     setproctitle("agentic")
     log_queue = queue.Queue()
-    temp_log_file_path = os.path.join(log_dir, 'temp', scenario['name'],
+    # Flatten temp path (remove extra scenario-name sub-dir) to stay under Windows MAX_PATH=260
+    temp_log_file_path = os.path.join(log_dir, 'temp',
                                       f"{scenario['name']}-{category.replace('-', '_')}.log".replace(' ', '-'))
     os.makedirs(os.path.dirname(temp_log_file_path), exist_ok=True)
 
@@ -437,7 +442,7 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
             print(f"Finished processing category: {category}")
             return result, temp_log_file_path
     except Exception as e:
-        temp_err_file_path = os.path.join(log_dir, 'temp', scenario['name'],
+        temp_err_file_path = os.path.join(log_dir, 'temp',
                                           f"{scenario['name']}-{category.replace('-', '_')}.err".replace(' ', '-'))
         os.makedirs(os.path.dirname(temp_err_file_path), exist_ok=True)
         error_message = f"Error processing category {category} in scenario {scenario['name']}:\n{str(e)}\nTraceback:\n{traceback.format_exc()}"
@@ -558,7 +563,7 @@ def main():
     args.use_benign = test_state('use_benign', bool(args.use_benign))
 
     # Either use the provided max_workers or auto-detect based on # of CPU cores
-    args.max_workers = args.max_workers if args.max_workers > 0 else len(os.sched_getaffinity(0)) * 4
+    args.max_workers = args.max_workers if args.max_workers > 0 else (len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else os.cpu_count() or 4) * 4
     args.max_workers = test_state('max_workers', args.max_workers)
 
     print("Number of workers used: ", args.max_workers)
@@ -583,7 +588,7 @@ def main():
     print("Using output directory:", args.output_dir)
 
     if not args.timestamp:
-        args.timestamp = str(datetime.now())
+        args.timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')  # no microseconds → shorter paths on Windows
     args.timestamp = test_state('timestamp', args.timestamp.strip().replace(':', '-').replace(' ', '-'))
 
     api_conf_args = test_state('api_conf_args', {
@@ -639,10 +644,10 @@ def main():
 
     if args.total_tasks:
         # Case for HPC enabled
-        output_path_initial = f'{args.model_name.replace('/', '-')}/{str(args.job_id)}/task_{args.task_id}_total_{args.total_tasks}_{args.timestamp}/'
+        output_path_initial = f'{args.model_name.replace("/", "-")}/{str(args.job_id)}/task_{args.task_id}_total_{args.total_tasks}_{args.timestamp}/'
     else:
         # Case for HPC disabled
-        output_path_initial = f'{args.model_name.replace('/', '-')}/{args.timestamp}/'
+        output_path_initial = f'{args.model_name.replace("/", "-")}/{args.timestamp}/'
 
     output_path_initial = test_state('output_path_initial', output_path_initial)
     output_filename = test_state('output_filename', f"results.jsonl")
@@ -655,7 +660,11 @@ def main():
     all_results = test_state('all_results', [])
     processed_categories = test_state('processed_categories', {})
     futures_metadata = test_state('futures_metadata', [])  # List to store futures and their metadata
-    with concurrent.futures.ProcessPoolExecutor(max_workers=args.max_workers) as executor:
+
+    # Use ThreadPoolExecutor instead of ProcessPoolExecutor on Windows to avoid spawn issues
+    Executor = concurrent.futures.ThreadPoolExecutor if sys.platform == 'win32' else concurrent.futures.ProcessPoolExecutor
+
+    with Executor(max_workers=args.max_workers) as executor:
         all_roles = get_workspaces_and_roles_for_task(
             loaded_workspaces=loaded_workspaces,
             inputs_dir=args.input_dir,

@@ -1,0 +1,24 @@
+{
+  "output": {
+    "filePath": "PROJECT_INDEX/history/propensity-evaluation_index.md",
+    "style": "markdown",
+    "showLineNumbers": false,
+    "copyToClipboard": false
+  },
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "data/**",
+      "inputs/**",
+      "assets/**",
+      "**/*.json",
+      "**/*.md",
+      "**/*.png",
+      "**/*.jpg",
+      "**/*.svg",
+      "PROJECT_INDEX/**"
+    ]
+  },
+  "include": []
+}

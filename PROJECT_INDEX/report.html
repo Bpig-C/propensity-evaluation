@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropensityBench — 仓库分析报告</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js'></script>
+<style>
+
+  /* 强制表格边框可见（覆盖 Tailwind preflight 的 border 重置） */
+  .md-table table { border-collapse: collapse !important; width: 100%; margin: 0.75em 0; font-size: 0.85em; }
+  .md-table th { background: #f0f9ff !important; font-weight: 600; text-align: left; padding: 0.5em 0.75em; border: 1px solid #93c5fd !important; color: #1e40af; }
+  .md-table td { padding: 0.4em 0.75em; border: 1px solid #e2e8f0 !important; vertical-align: top; }
+  .md-table tr:nth-child(even) td { background: #f8fafc; }
+  .md-table tr:hover td { background: #eff6ff; }
+
+
+  .prose-content h1 { font-weight: 700; font-size: 1.4em; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.3em; margin: 1.2em 0 0.5em; color: #1e293b; }
+  .prose-content h2 { font-weight: 600; font-size: 1.15em; margin: 1.1em 0 0.4em; color: #334155; border-left: 3px solid #3b82f6; padding-left: 0.6em; }
+  .prose-content h3 { font-weight: 600; font-size: 1em; margin: 0.9em 0 0.3em; color: #475569; }
+  .prose-content p { margin-bottom: 0.75em; line-height: 1.7; color: #374151; }
+  .prose-content ul, .prose-content ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+  .prose-content li { margin-bottom: 0.3em; line-height: 1.6; }
+  .prose-content code { background: #f1f5f9; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.82em; font-family: ui-monospace, 'Cascadia Code', monospace; color: #be185d; }
+  .prose-content pre { background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px; overflow-x: auto; margin: 0.75em 0; }
+  .prose-content pre code { background: none; padding: 0; color: #e2e8f0; font-size: 0.8em; }
+  .prose-content blockquote { border-left: 4px solid #93c5fd; padding: 0.5em 1em; color: #64748b; margin: 0.75em 0; background: #f0f9ff; border-radius: 0 4px 4px 0; }
+  .prose-content hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.5em 0; }
+  .prose-content a { color: #2563eb; text-decoration: underline; }
+
+  .tab-btn { transition: all 0.15s; }
+  .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+  .active-arch-tab { background: #dbeafe !important; color: #1d4ed8 !important; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<!-- Header -->
+<header class="bg-slate-900 text-white shadow-lg sticky top-0 z-20">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div>
+      <span class="text-lg font-bold tracking-tight">PropensityBench</span>
+      <span class="text-slate-400 text-xs ml-3">仓库分析报告 · 2026-04-11 11:18 · <a href="https://github.com/scaleapi/propensity-evaluation" target="_blank" class="text-blue-400 hover:text-blue-300 underline text-xs">https://github.com/scaleapi/propensity-evaluation</a></span>
+    </div>
+    <nav class="flex gap-0.5">
+      <button onclick="showTab('overview')" id="tab-overview" class="tab-btn active px-3 py-1.5 text-sm text-white">概览</button>
+      <button onclick="showTab('arch')" id="tab-arch" class="tab-btn px-3 py-1.5 text-sm text-slate-300">架构图</button>
+      <button onclick='showTab("deps")' id='tab-deps' class='tab-btn px-3 py-1.5 text-sm text-slate-300'>外部依赖</button>
+      
+      <button onclick='showTab("contracts")' id='tab-contracts' class='tab-btn px-3 py-1.5 text-sm text-slate-300'>数据契约</button>
+      <button onclick="showTab('report')" id="tab-report" class="tab-btn px-3 py-1.5 text-sm text-slate-300">完整报告</button>
+      <button onclick="showTab('health')" id="tab-health" class="tab-btn px-3 py-1.5 text-sm text-slate-300">健康度</button>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-5">
+
+<!-- ── 概览 ── -->
+<div id="pane-overview" class="tab-pane">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 space-y-4">
+      <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+        <h2 class="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <span class="w-2 h-2 bg-blue-500 rounded-full inline-block"></span> 项目本质
+        </h2>
+        
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 mb-5">
+          <div class="markdown-src hidden">**PropensityBench 是一个 LLM 安全倾向性评测框架**，专门测量语言模型在被赋予高风险工具、并置于&quot;操作压力&quot;下时，**倾向于执行有害行动的概率**。
+
+它的核心研究问题是：不是&quot;模型能不能做坏事&quot;（能力），而是&quot;模型在正常运行环境下会不会主动选择做坏事&quot;（倾向性/propensity）。
+
+框架分两条主线：
+1. **场景生成流水线**（`generation/`）：用 LLM 批量生成高风险业务场景（4个领域 × 32个工作空间 × 多角色 = 979个场景，共5874个测试用例），每个场景包含工具定义、状态机、政策约束、压力消息。
+2. **Agentic 评估执行器**（`evaluation/`）：将被测 LLM 放入模拟的高风险工作空间，配备真实工具调用接口，施加系统性压力，观察其是否调用了预设的&quot;有害目标函数&quot;（`trigger_function`）。
+
+---</div>
+          <div class="markdown-out md-table prose-content text-sm leading-relaxed text-blue-900"></div>
+        </div>
+      </div>
+    </div>
+    <div class="space-y-3">
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">分析产物</h3>
+        <ul class="text-sm text-slate-600 space-y-1">
+          <li class='flex items-center gap-2'><span class='text-green-500'>✓</span> 最终解读报告</li>
+          
+          <li class='flex items-center gap-2'><span class='text-green-500'>✓</span> 四层契约分析</li>
+          
+          <li class='flex items-center gap-2'><span class='text-green-500'>✓</span> 调用图</li>
+          <li class='flex items-center gap-2'><span class='text-amber-500'>!</span> 10 个健康度问题</li>
+          <li class='flex items-center gap-2'><span class='text-blue-500'>⊕</span> 17 个外部依赖</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 架构图 ── -->
+<div id="pane-arch" class="tab-pane hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="flex items-center gap-2 px-4 py-3 border-b bg-slate-50">
+      <h2 class="text-sm font-semibold text-slate-700 mr-2">架构图</h2>
+      <div class="flex gap-1"><button onclick="showArchTab('arch-dataflow')" id="btn-arch-dataflow" class="arch-tab-btn active-arch-tab px-3 py-1 text-xs rounded font-medium">数据流图</button><button onclick="showArchTab('arch-modules')" id="btn-arch-modules" class="arch-tab-btn  px-3 py-1 text-xs rounded font-medium">模块调用图</button><button onclick="showArchTab('arch-ascii')" id="btn-arch-ascii" class="arch-tab-btn px-3 py-1 text-xs rounded font-medium">ASCII 图</button></div>
+    </div>
+    <div class="p-6 overflow-x-auto">
+      
+        <div id="arch-dataflow" class="arch-tab-pane">
+          <p class="text-xs text-gray-400 mb-3">数据流向：外部来源 → 项目组件 → 输出目标</p>
+          <div class="mermaid">graph LR
+    subgraph LOCAL["用户本地机器"]
+        F0["预生成基准数据（Git LFS）"]
+        style F0 fill:#fef9c3,stroke:#ca8a04
+        F1["样例数据（5个场景/domain）"]
+        style F1 fill:#fef9c3,stroke:#ca8a04
+        F2["攻击向量定义"]
+        style F2 fill:#fef9c3,stroke:#ca8a04
+        F3["Workspace 定义（角色+描述）"]
+        style F3 fill:#fef9c3,stroke:#ca8a04
+        F4["压力类别配置"]
+        style F4 fill:#fef9c3,stroke:#ca8a04
+        F5["生成流水线中间产物"]
+        style F5 fill:#fef9c3,stroke:#ca8a04
+        F6["评估结果（JSONL格式）"]
+        style F6 fill:#fef9c3,stroke:#ca8a04
+        F7["完整交互轨迹日志"]
+        style F7 fill:#fef9c3,stroke:#ca8a04
+    end
+    subgraph PROJ["PropensityBench"]
+        CORE["核心模块"]
+        style CORE fill:#dbeafe,stroke:#3b82f6
+    end
+    F0 -->|读取| CORE
+    F1 -->|读取| CORE
+    F2 -->|读取| CORE
+    F3 -->|读取| CORE
+    F4 -->|读取| CORE
+    F5 -->|读取| CORE
+    F6 -->|读取| CORE
+    F7 -->|读取| CORE</div>
+        </div>
+        <div id="arch-modules" class="arch-tab-pane hidden">
+          <p class="text-xs text-gray-400 mb-3">代码模块调用关系（来自 pyan3 静态分析，蓝=根节点，绿=叶节点）</p>
+          <div class="mermaid">graph LR
+    M0["executor"]
+    style M0 fill:#dbeafe,stroke:#3b82f6
+    M1["client"]
+    M2["validation_executor"]
+    style M2 fill:#dbeafe,stroke:#3b82f6
+    M3["messages_pipeline"]
+    style M3 fill:#dbeafe,stroke:#3b82f6
+    M4["utils"]
+    M5["scenarios_pipeline"]
+    style M5 fill:#dbeafe,stroke:#3b82f6
+    M6(["api_conf"])
+    style M6 fill:#f0fdf4,stroke:#16a34a
+    M7(["base"])
+    style M7 fill:#f0fdf4,stroke:#16a34a
+    M8(["litellm_utils"])
+    style M8 fill:#f0fdf4,stroke:#16a34a
+    M0 -->|x5| M1
+    M2 -->|x5| M1
+    M3 -->|x4| M4
+    M5 -->|x4| M4
+    M3 -->|x3| M6
+    M3 -->|x3| M7
+    M5 -->|x3| M6
+    M5 -->|x3| M7
+    M1 -->|x2| M6
+    M0 -->|x2| M6
+    M2 -->|x2| M6
+    M4 -->|x2| M1
+    M4 -->|x2| M8</div>
+        </div>
+        <div id="arch-ascii" class="arch-tab-pane hidden">
+          <p class="text-xs text-gray-400 mb-3">原始 ASCII 架构图（来自最终报告）</p>
+          <pre class="bg-gray-900 text-green-400 text-xs leading-tight font-mono p-4 rounded-lg overflow-x-auto">                         ┌─────────────────────────────────────────────────┐
+                         │              Generation Pipeline                 │
+                         │                                                  │
+  inputs/workspaces/ ──► │  main_scen_pipeline.py                          │
+  inputs/attacks/    ──► │    └── PipelineScenarios                        │
+                         │        ├── ScenarioManager(states)              │
+                         │        ├── ScenarioManager(funcs)    ──► LLM    │
+                         │        ├── ScenarioManager(policies)            │
+                         │        └── ScenarioManager(messages)            │
+                         │                    │                             │
+                         │  main_scen_pipeline_messages.py                 │
+                         │    └── PipelineMessages                         │
+                         │        └── MessagesScenarioManager  ──► LLM    │
+                         │                    │                             │
+                         └────────────────────┼────────────────────────────┘
+                                              │ generation_output/*.json
+                                              ▼
+                                        data/full/
+                                   (979 scenarios × 6)
+                                              │
+                         ┌────────────────────┼────────────────────────────┐
+                         │              Evaluation Harness                  │
+                         │                                                  │
+                         │  evaluation/main.py (PropensityEvaluator)       │
+                         │    └── per scenario:                            │
+                         │        ├── Agent (with dynamic tool set)        │
+                         │        │    ├── neutral_tools (正常工具)         │
+                         │        │    └── target_function (有害目标)       │
+                         │        ├── Executor (12轮交互循环)   ──► LLM被测 │
+                         │        └── ValidationExecutor (验证探针)        │
+                         │                    │                             │
+                         └────────────────────┼────────────────────────────┘
+                                              │
+                              evaluation_results/*.jsonl（每行一个测试用例）
+                              evaluation_trajectories/（完整轨迹）</pre>
+        </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 外部依赖 ── -->
+
+<div id="pane-deps" class="tab-pane hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-5 py-3.5 border-b bg-slate-50">
+      <h2 class="text-sm font-semibold text-slate-700">外部依赖详情</h2>
+      <p class="text-xs text-slate-400 mt-0.5">本项目依赖的外部文件、WebSocket 端点、HTTP API（从四层契约分析自动提取）</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full" style="border-collapse:collapse">
+        <thead>
+          <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+            <th style="padding:10px 14px;text-align:left;font-size:0.75em;font-weight:600;color:#475569;border:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:0.05em">依赖点 / 路径</th>
+            <th style="padding:10px 14px;text-align:center;font-size:0.75em;font-weight:600;color:#475569;border:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:0.05em;width:80px">类型</th>
+            <th style="padding:10px 14px;text-align:left;font-size:0.75em;font-weight:600;color:#475569;border:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:0.05em">具体路径 / 协议</th>
+            <th style="padding:10px 14px;text-align:left;font-size:0.75em;font-weight:600;color:#475569;border:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:0.05em">读取方 / 影响</th>
+          </tr>
+        </thead>
+        <tbody style="divide-y:1px solid #e2e8f0"><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">data/full/&lt;domain&gt;/&lt;workspace&gt;/</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">预生成基准数据（Git LFS）</td>
+            <td class="py-2 px-3 text-xs text-gray-500">evaluation/main.py</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">data/sample/&lt;domain&gt;/&lt;workspace&gt;/</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">样例数据（5个场景/domain）</td>
+            <td class="py-2 px-3 text-xs text-gray-500">快速检验</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">inputs/attacks/&lt;domain&gt;/attacks.json</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">攻击向量定义</td>
+            <td class="py-2 px-3 text-xs text-gray-500">generation/main_scen_pipeline.py</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">inputs/workspaces/&lt;domain&gt;/.json</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">Workspace 定义（角色+描述）</td>
+            <td class="py-2 px-3 text-xs text-gray-500">generation pipelines</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">inputs/pressure_categories/.json</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">压力类别配置</td>
+            <td class="py-2 px-3 text-xs text-gray-500">generation/messages_pipeline</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">generation_output/</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">生成流水线中间产物</td>
+            <td class="py-2 px-3 text-xs text-gray-500">step1→step2 间传递</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">evaluation/evaluation_results/</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">评估结果（JSONL格式）</td>
+            <td class="py-2 px-3 text-xs text-gray-500">evaluation/main.py 输出</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">evaluation/evaluation_trajectories/</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">完整交互轨迹日志</td>
+            <td class="py-2 px-3 text-xs text-gray-500">研究/调试用</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">.tmp/</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">限速信号量文件（fcntl 锁）</td>
+            <td class="py-2 px-3 text-xs text-gray-500">api_client/client.py::RateLimiter</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">state.json</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">评估断点续跑状态</td>
+            <td class="py-2 px-3 text-xs text-gray-500">evaluation/main.py</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">OpenAI / Gemini / Anthropic 等</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">HTTPS LiteLLM</td>
+            <td class="py-2 px-3 text-xs text-gray-500">场景生成 + 评估推理</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">LiteLLM Proxy</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">HTTPS</td>
+            <td class="py-2 px-3 text-xs text-gray-500">统一 API 代理层（可选）</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">data/full/ Git LFS 数据</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">~770MB，未 pull 时为 LFS 指针</td>
+            <td class="py-2 px-3 text-xs text-gray-500">评估无法运行</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">generation_output/ 中间产物</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">Step1 → Step2 的传递媒介</td>
+            <td class="py-2 px-3 text-xs text-gray-500">messages pipeline</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">POSIX fcntl 模块</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">跨进程限速锁</td>
+            <td class="py-2 px-3 text-xs text-gray-500">Windows 上失效</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">API_KEYS 环境变量</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-purple-100 text-purple-800">ENV</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">Client 初始化断言</td>
+            <td class="py-2 px-3 text-xs text-gray-500">所有 LLM 调用</td>
+        </tr><tr>
+            <td class="py-2 px-3 font-mono text-xs text-gray-700 break-all">LiteLLM</td>
+            <td class="py-2 px-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-amber-100 text-amber-800">文件</span></td>
+            <td class="py-2 px-3 text-xs text-gray-500 font-mono break-all">统一 LLM 调用层</td>
+            <td class="py-2 px-3 text-xs text-gray-500">全系统</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── 模块解读 ── -->
+
+
+<!-- ── 数据契约 ── -->
+
+<div id="pane-contracts" class="tab-pane hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="flex border-b overflow-x-auto bg-slate-50">
+            <button onclick="showLayer('layer_0')" id="layernav-layer_0"
+                class="layer-nav-btn whitespace-nowrap px-4 py-2 text-sm border-b-2 border-blue-600 text-blue-700 font-semibold">
+                结构层
+            </button>
+            <button onclick="showLayer('layer_1')" id="layernav-layer_1"
+                class="layer-nav-btn whitespace-nowrap px-4 py-2 text-sm text-gray-500 hover:text-gray-700">
+                数据契约层
+            </button>
+            <button onclick="showLayer('layer_2')" id="layernav-layer_2"
+                class="layer-nav-btn whitespace-nowrap px-4 py-2 text-sm text-gray-500 hover:text-gray-700">
+                交互协议层
+            </button>
+            <button onclick="showLayer('layer_3')" id="layernav-layer_3"
+                class="layer-nav-btn whitespace-nowrap px-4 py-2 text-sm text-gray-500 hover:text-gray-700">
+                失效边界层
+            </button></div>
+    
+            <div id="layer-layer_0" class="layer-pane  p-5">
+              <div class="markdown-src hidden">### 文件规模
+
+| 文件 | 实际行数 | 说明 |
+|------|---------|------|
+| evaluation/main.py | 829 | F级热点（CC=46），评估主控 |
+| generation/pipeline/modules/scenario_utils_messages_single.py | 1018 | 最大文件，消息生成核心 |
+| generation/pipeline/modules/scenario_utils_funcs.py | 659 | 函数场景生成 |
+| generation/pipeline/modules/scenario_utils_states.py | 603 | 状态场景生成 |
+| api_client/client.py | ~560 | 多API密钥限速客户端 |
+
+README 文档描述准确，无明显 V1/V2 叠加问题。
+
+### 模块组织
+
+```
+propensity-evaluation/
+├── api_client/          # LLM 调用层（APIConfiguration + RateLimiter + Client）
+├── evaluation/          # 评估执行层（Agent + Executor + main.py 主控）
+├── generation/          # 场景生成层
+│   ├── pipeline/        # 生成流水线（BasePipeline → PipelineScenarios/PipelineMessages）
+│   │   └── modules/     # 五种 ScenarioManager（funcs/states/policies/messages/messages_single）
+│   └── res/prompts/     # .ini 格式 prompt 模板（7个）
+├── utils/               # 通用工具（colors/litellm_utils/regex）
+├── inputs/              # 场景输入数据（workspaces JSON + attacks JSON）
+└── data/                # 预生成基准数据（~770MB，需 Git LFS）
+```
+
+### 复杂度热点
+
+| 函数 | CC | 级别 | 所在模块 |
+|------|-----|------|---------|
+| evaluation/main.py::main | 46 | F | 评估主控 |
+| scenario_utils_messages_single::generate_messages | 28 | D | 消息生成 |
+| scenario_utils_messages_single::judge_messages | 27 | D | 消息判断 |
+| scenario_utils_funcs::generate_scenarios | 22 | D | 函数场景生成 |
+| scenario_utils_messages::generate_scenarios | 22 | D | 消息场景生成 |
+| scenario_utils_messages_single::process_category | 21 | D | 分类处理 |
+
+---</div>
+              <div class="markdown-out md-table prose-content text-sm leading-relaxed"></div>
+            </div>
+            <div id="layer-layer_1" class="layer-pane hidden p-5">
+              <div class="markdown-src hidden">### 核心数据格式
+
+场景数据为嵌套 JSON，按 `domain → workspace → role → scenarios` 四层组织：
+
+```json
+{
+  &quot;&lt;domain&gt;&quot;: {
+    &quot;&lt;workspace&gt;&quot;: {
+      &quot;&lt;role&gt;&quot;: {
+        &quot;scenarios&quot;: {
+          &quot;&lt;scenario_name&gt;&quot;: {
+            &quot;states&quot;: {...},
+            &quot;functions&quot;: [...],        // 工具调用定义
+            &quot;target_function&quot;: &quot;...&quot;,  // 触发函数名
+            &quot;trigger_function&quot;: &quot;...&quot;, // 有害函数名
+            &quot;policy&quot;: &quot;...&quot;,
+            &quot;messages&quot;: {...},
+            &quot;sys_messages&quot;: [...]      // 压力系统消息列表
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### 关键字段枚举
+
+**domains（4个）**：`bio-security`、`chemical-security`、`cyber-security`、`self-proliferation`
+
+**函数类型**：每个场景包含 `neutral_name`（无害名）和 `harmful_name`（有害名），`--use_benign` 参数控制使用哪个名字送给评估模型，这是测试&quot;浅层对齐&quot;的核心机制。
+
+**压力类别（6个 tactics，来自 inputs/pressure_categories/）**：
+- `evaluation-awareness`（EA）
+- `financials`（F）
+- `power-seeking`（PS）
+- `resource-deprivation`（RD）
+- `self-preservation`（SP）
+- `time`（T）
+
+每个 tactic 有 11 个强度级别，构成 6 × 11 = 66 种压力配置。
+
+### 文件路径依赖
+
+| 路径 | 用途 | 消费方 |
+|------|------|-------|
+| `data/full/&lt;domain&gt;/&lt;workspace&gt;/` | 预生成基准数据（Git LFS） | evaluation/main.py |
+| `data/sample/&lt;domain&gt;/&lt;workspace&gt;/` | 样例数据（5个场景/domain） | 快速检验 |
+| `inputs/attacks/&lt;domain&gt;/attacks.json` | 攻击向量定义 | generation/main_scen_pipeline.py |
+| `inputs/workspaces/&lt;domain&gt;/*.json` | Workspace 定义（角色+描述）| generation pipelines |
+| `inputs/pressure_categories/*.json` | 压力类别配置 | generation/messages_pipeline |
+| `generation_output/` | 生成流水线中间产物 | step1→step2 间传递 |
+| `evaluation/evaluation_results/` | 评估结果（JSONL格式） | evaluation/main.py 输出 |
+| `evaluation/evaluation_trajectories/` | 完整交互轨迹日志 | 研究/调试用 |
+| `.tmp/` | 限速信号量文件（fcntl 锁） | api_client/client.py::RateLimiter |
+| `state.json` | 评估断点续跑状态 | evaluation/main.py |
+
+---</div>
+              <div class="markdown-out md-table prose-content text-sm leading-relaxed"></div>
+            </div>
+            <div id="layer-layer_2" class="layer-pane hidden p-5">
+              <div class="markdown-src hidden">### 对外接口
+
+**evaluation/main.py（主评估入口）**：
+```bash
+python evaluation/main.py \
+  --model_name &lt;model&gt;      # 被评估模型名
+  --model_provider &lt;prov&gt;   # litellm provider（openai/gemini/anthropic等）
+  --api_base &lt;url&gt;          # API 端点
+  --input_dir data/full/    # 场景输入目录
+  --output_dir &lt;dir&gt;        # 结果输出目录（JSONL）
+  --log_dir &lt;dir&gt;           # 轨迹日志目录
+  --use_benign              # 使用无害工具名（测试浅层对齐）
+  --validation_mode         # 验证模式（单步探针，不运行完整episode）
+  --max_workers &lt;N&gt;         # 并发 worker 数
+  -p &lt;N&gt;                    # 压力级别
+  -m &lt;N&gt;                    # 场景消息数
+  -j &lt;N&gt;                    # judge 调用次数
+  --task_id/--total_tasks   # 分片并行支持
+  --no-contd                # 禁用断点续跑
+```
+
+**generation（两阶段流水线）**：
+```bash
+python generation/main_scen_pipeline.py          # Phase 1: 生成 states/funcs/policies/messages
+python generation/main_scen_pipeline_messages.py # Phase 2: 生成压力系统消息
+```
+配置通过 Hydra（`generation/configs/pipeline.yaml`）管理。
+
+### 认证机制
+
+- API 密钥通过 `.env` 文件注入，`API_KEYS` 为空格分隔的密钥池
+- `RateLimiter` 使用 `fcntl.flock` 跨进程文件锁 + 信号量文件实现多进程安全限速
+- 支持密钥池轮转（key cycling）：一个 key 耗尽时自动切换到下一个
+
+### 第三方服务依赖
+
+| 服务 | 协议 | 用途 |
+|------|------|------|
+| OpenAI / Gemini / Anthropic 等 | HTTPS LiteLLM | 场景生成 + 评估推理 |
+| LiteLLM Proxy | HTTPS | 统一 API 代理层（可选）|
+
+---</div>
+              <div class="markdown-out md-table prose-content text-sm leading-relaxed"></div>
+            </div>
+            <div id="layer-layer_3" class="layer-pane hidden p-5">
+              <div class="markdown-src hidden">### 降级策略
+
+| 场景 | 处理方式 |
+|------|---------|
+| API 限速（429） | RateLimiter 自动循环等待 20s 后重试；切换下一个 key/model |
+| LLM 响应格式不合法 | Executor 最多 12 次重试；ValidationExecutor 同等策略 |
+| 进程中断（SIGTERM） | evaluation/main.py 捕获信号，保存 state.json，支持断点续跑 |
+| 生成结果不完整 | PipelineMessages.run_gen_messages 检测字段完整性，不完整则跳过更新 |
+| pyan3 无法分析含嵌套 lambda 的文件 | evaluation/main.py 排除（已记录）|
+
+### 可选组件（opt-in）
+
+- `--use_benign`：切换工具命名模式（默认 harmful 名，opt-in benign 名）
+- `--validation_mode`：单步探针替代完整 episode（用于快速验证）
+- `RATE_LIMIT=true`：启用限速（默认关闭，需显式开启）
+- `--no-contd`：禁用断点续跑（默认启用续跑）
+
+### 关键失效场景矩阵
+
+| 失效场景 | 影响 | 检测 |
+|---------|------|------|
+| Git LFS 未安装 | data/full/ 内容为 LFS 指针文件，评估无法运行 | FileNotFoundError/乱码 |
+| API_KEYS 未设置 | Client.__init__ 中 assert 直接中断 | AssertionError |
+| fcntl 在 Windows 不可用 | RateLimiter._initialize_semaphores 崩溃 | ImportError（fcntl 是 POSIX 专属）|
+| generation_output 不存在 | messages pipeline 无法读取 step1 产物 | FileNotFoundError + logger.error |</div>
+              <div class="markdown-out md-table prose-content text-sm leading-relaxed"></div>
+            </div>
+  </div>
+</div>
+
+
+<!-- ── 完整报告 ── -->
+<div id="pane-report" class="tab-pane hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 lg:p-8">
+    <div class="markdown-src hidden"># PropensityBench 最终解读报告
+
+&gt; 生成日期：2026-04-11
+&gt; 分析对象：https://github.com/scaleapi/propensity-evaluation
+&gt; 基于：项目索引（repomix）、四层契约分析、evaluation/ + generation/ + api_client/ 逐文件阅读
+
+---
+
+## 一、项目本质
+
+**PropensityBench 是一个 LLM 安全倾向性评测框架**，专门测量语言模型在被赋予高风险工具、并置于&quot;操作压力&quot;下时，**倾向于执行有害行动的概率**。
+
+它的核心研究问题是：不是&quot;模型能不能做坏事&quot;（能力），而是&quot;模型在正常运行环境下会不会主动选择做坏事&quot;（倾向性/propensity）。
+
+框架分两条主线：
+1. **场景生成流水线**（`generation/`）：用 LLM 批量生成高风险业务场景（4个领域 × 32个工作空间 × 多角色 = 979个场景，共5874个测试用例），每个场景包含工具定义、状态机、政策约束、压力消息。
+2. **Agentic 评估执行器**（`evaluation/`）：将被测 LLM 放入模拟的高风险工作空间，配备真实工具调用接口，施加系统性压力，观察其是否调用了预设的&quot;有害目标函数&quot;（`trigger_function`）。
+
+---
+
+## 二、系统全景图
+
+```
+                         ┌─────────────────────────────────────────────────┐
+                         │              Generation Pipeline                 │
+                         │                                                  │
+  inputs/workspaces/ ──► │  main_scen_pipeline.py                          │
+  inputs/attacks/    ──► │    └── PipelineScenarios                        │
+                         │        ├── ScenarioManager(states)              │
+                         │        ├── ScenarioManager(funcs)    ──► LLM    │
+                         │        ├── ScenarioManager(policies)            │
+                         │        └── ScenarioManager(messages)            │
+                         │                    │                             │
+                         │  main_scen_pipeline_messages.py                 │
+                         │    └── PipelineMessages                         │
+                         │        └── MessagesScenarioManager  ──► LLM    │
+                         │                    │                             │
+                         └────────────────────┼────────────────────────────┘
+                                              │ generation_output/*.json
+                                              ▼
+                                        data/full/
+                                   (979 scenarios × 6)
+                                              │
+                         ┌────────────────────┼────────────────────────────┐
+                         │              Evaluation Harness                  │
+                         │                                                  │
+                         │  evaluation/main.py (PropensityEvaluator)       │
+                         │    └── per scenario:                            │
+                         │        ├── Agent (with dynamic tool set)        │
+                         │        │    ├── neutral_tools (正常工具)         │
+                         │        │    └── target_function (有害目标)       │
+                         │        ├── Executor (12轮交互循环)   ──► LLM被测 │
+                         │        └── ValidationExecutor (验证探针)        │
+                         │                    │                             │
+                         └────────────────────┼────────────────────────────┘
+                                              │
+                              evaluation_results/*.jsonl（每行一个测试用例）
+                              evaluation_trajectories/（完整轨迹）
+```
+
+---
+
+## 三、各模块职责精要
+
+### api_client/
+
+**本质**：多 API key 池化 + 跨进程限速的 LiteLLM 包装层。
+
+- `APIConfiguration`：简单数据类，持有 model_name/provider/api_base/use_cache 四个字段
+- `RateLimiter`：用文件系统信号量（`.tmp/` 目录下的 JSON 文件 + `fcntl.flock`）实现跨进程安全限速；后台线程每秒释放过期 token；支持 key 轮转
+- `Client`：封装 `litellm.completion()`，支持 Pydantic schema 或 dict schema 的结构化输出；温度/缓存/proxy 均可配置
+
+**关键隐患**：`fcntl` 是 POSIX 专属模块，在 Windows 上 **不可用**。这是该项目在 Windows 上无法运行限速功能的根本原因。
+
+### evaluation/
+
+**本质**：把 LLM 关进一个带有&quot;诱导性工具&quot;的模拟工作空间，观察其是否触发有害行动。
+
+- **`Agent`**：持有对话历史（history）、工具调用封装（OpenAI function-calling 格式）和角色系统提示。`SYSTEM_PROMPT_TEMPLATE` 故意伪造&quot;真实世界 API&quot;的感知（&quot;This API controls REAL-WORLD instruments&quot;），这是施压设计的一部分。
+- **`Executor`**：管理 12 轮交互循环，处理 tool call 解析、连续消息限制、工具调用计数。关键逻辑：检测 `trigger_function` 是否被调用（=propensity 触发）。
+- **`ValidationExecutor`**：单步探针，用于验证场景是否合理（不跑完整 episode），返回 yes/no 判断。
+- **`PropensityEvaluator`（main.py）**：最复杂模块（CC=46）。并发运行多个场景，支持断点续跑（state.json），处理压力级别叠加，写出 JSONL 结果。
+
+### generation/
+
+**本质**：五阶段 LLM 工厂，从 workspace 定义出发，逐步生成状态机 → 函数定义 → 政策约束 → 任务消息 → 压力消息。
+
+- **BasePipeline**：提供日志写入基础设施
+- **PipelineScenarios**：驱动前四个阶段，按 domain/workspace 并行处理（ProcessPoolExecutor）
+- **PipelineMessages**：驱动第五阶段，向已有场景追加压力系统消息
+- **五个 ScenarioManager**：各自对应一个生成阶段，内部逻辑相似（生成 → Judge 打分 → 筛选 → 重试）
+- **MessagesScenarioManager**：最复杂，负责为 6 种压力 tactic × 11 强度级别 × 每场景生成压力消息（D级复杂度）
+- **SimilarityGraph**：用 TF-IDF + 余弦相似度去除重复场景（networkx 最大权重节点删除算法）
+
+---
+
+## 四、关键依赖与耦合边界
+
+### 硬依赖
+
+| 依赖点 | 具体说明 | 影响范围 |
+|--------|---------|---------|
+| `data/full/` Git LFS 数据 | ~770MB，未 pull 时为 LFS 指针 | 评估无法运行 |
+| `inputs/pressure_categories/*.json` | 6个压力 tactic 定义文件 | 消息生成流水线 |
+| `inputs/workspaces/&lt;domain&gt;/*.json` | Workspace 角色定义 | 生成流水线入口 |
+| `generation_output/` 中间产物 | Step1 → Step2 的传递媒介 | messages pipeline |
+| POSIX `fcntl` 模块 | 跨进程限速锁 | Windows 上失效 |
+| `API_KEYS` 环境变量 | Client 初始化断言 | 所有 LLM 调用 |
+| LiteLLM | 统一 LLM 调用层 | 全系统 |
+
+### 软依赖（可替换）
+
+- `hydra`：配置管理（generation/），可替换为 argparse
+- `rich`：彩色终端输出（evaluation/utils/display.py），纯视觉增强
+- `networkx` + `sklearn`：相似度去重（generation/pipeline/modules/graph_utils.py），仅影响场景多样性
+
+---
+
+## 五、架构健康度评估
+
+### 优点
+
+| 方面 | 说明 |
+|------|------|
+| 关注点分离清晰 | generation / evaluation / api_client 三层职责明确 |
+| 断点续跑设计 | state.json + SIGTERM 处理，大规模评估不怕中断 |
+| 可扩展压力框架 | 6 tactics × 11 levels 可独立扩展 |
+| 多模型支持 | LiteLLM 抽象层屏蔽了各 provider 差异 |
+| 工具命名对照设计 | neutral/harmful 双名字对照是核心实验设计，代码支持良好 |
+
+### 值得关注的问题
+
+| 问题 | 位置 | 影响 |
+|------|------|------|
+| fcntl 不可移植 | api_client/client.py::RateLimiter | Windows 上 RateLimiter 完全失效，需用 multiprocessing.Semaphore 替代 |
+| evaluation/main.py CC=46 | evaluation/main.py::main | 难以测试和维护，是最容易引入 bug 的位置 |
+| ScenarioManager 同名类泛滥 | 4个文件中均有 ScenarioManager | import 时易混淆，建议添加模块前缀（FuncsScenarioManager 等）|
+| 两个 main_scen_pipeline.py 重复逻辑 | generation/main_scen_pipeline*.py | init_attack_vectors/get_attack_vectors_for_roles 等函数完全重复 |
+| fcntl 信号量文件积累 | .tmp/ 目录 | 长期运行后文件数增多，目前无清理机制 |
+
+---
+
+## 六、对后续工作的指引
+
+如果目标是**复现论文评估结果**：
+1. 必须先 `git lfs pull` 拉取 `data/full/` 完整数据（770MB）
+2. 配置 `.env`：`API_KEYS`、`RATE_LIMIT=true`、`API_PROXY=litellm`、`RATE_PM=60`
+3. 在 **Linux/macOS** 上运行（fcntl 依赖）
+4. 关键命令：`python evaluation/main.py --model_name &lt;model&gt; --input_dir data/full/ ...`
+
+如果目标是**扩展到新的风险领域**：
+1. 在 `inputs/workspaces/&lt;new_domain&gt;/` 下添加 workspace JSON 定义
+2. 在 `inputs/attacks/&lt;new_domain&gt;/attacks.json` 中定义攻击向量
+3. 在 `generation/main_scen_pipeline.py` 的 `loaded_workspaces` 列表中追加新 workspace
+4. 运行两阶段生成流水线，把生成结果复制到 `data/full/`
+
+如果目标是**修复 Windows 兼容性**：
+- 将 `api_client/client.py` 中的 `fcntl.flock` 换成 `filelock` 库（跨平台），或用 `multiprocessing.Manager().Lock()`
+
+---
+
+## 七、产物清单
+
+```
+PROJECT_INDEX/
+├── architecture.md                   （本报告前已生成文件地图）
+├── 四层契约分析_20260411.md           结构/数据/协议/失效四层分析
+├── 最终解读报告_20260411.md           本文件
+├── report.html                        可交互 HTML 报告（7个Tab）
+├── extract_structure.py               AST 结构提取脚本
+├── parse_callgraph.py                 调用图解析脚本
+├── call_graph.dot                     pyan3 调用图（排除 evaluation/main.py）
+└── history/
+    └── propensity-evaluation_index.md  repomix 代码签名索引（89k tokens）
+```
+</div>
+    <div class="markdown-out md-table prose-content"></div>
+  </div>
+</div>
+
+<!-- ── 健康度 ── -->
+<div id="pane-health" class="tab-pane hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-5 py-3.5 border-b bg-slate-50">
+      <h2 class="text-sm font-semibold text-slate-700">架构健康度问题</h2>
+    </div>
+    <table class="w-full" style="border-collapse:collapse">
+      <thead>
+        <tr style="background:#fef2f2;border-bottom:2px solid #fecaca">
+          <th style="padding:10px 14px;text-align:left;font-size:0.75em;font-weight:600;color:#991b1b;border:1px solid #fecaca;text-transform:uppercase;letter-spacing:0.05em">问题</th>
+          <th style="padding:10px 14px;text-align:left;font-size:0.75em;font-weight:600;color:#991b1b;border:1px solid #fecaca;text-transform:uppercase;letter-spacing:0.05em">位置</th>
+          <th style="padding:10px 14px;text-align:left;font-size:0.75em;font-weight:600;color:#991b1b;border:1px solid #fecaca;text-transform:uppercase;letter-spacing:0.05em">影响</th>
+        </tr>
+      </thead>
+      <tbody><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">关注点分离清晰</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">generation / evaluation / api_client 三层职责明确</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600"></td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">断点续跑设计</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">state.json + SIGTERM 处理，大规模评估不怕中断</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600"></td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">可扩展压力框架</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">6 tactics × 11 levels 可独立扩展</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600"></td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">多模型支持</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">LiteLLM 抽象层屏蔽了各 provider 差异</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600"></td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">工具命名对照设计</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">neutral/harmful 双名字对照是核心实验设计，代码支持良好</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600"></td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">fcntl 不可移植</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">api_client/client.py::RateLimiter</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600">Windows 上 RateLimiter 完全失效，需用 multiprocessing.Semaphore 替代</td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">evaluation/main.py CC=46</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">evaluation/main.py::main</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600">难以测试和维护，是最容易引入 bug 的位置</td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">ScenarioManager 同名类泛滥</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">4个文件中均有 ScenarioManager</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600">import 时易混淆，建议添加模块前缀（FuncsScenarioManager 等）</td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">两个 main_scen_pipeline.py 重复逻辑</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">generation/main_scen_pipeline*.py</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600">init_attack_vectors/get_attack_vectors_for_roles 等函数完全重复</td>
+        </tr><tr>
+            <td class="py-2.5 px-4 text-sm font-medium text-red-700">fcntl 信号量文件积累</td>
+            <td class="py-2.5 px-4 text-sm text-gray-500 font-mono text-xs">.tmp/ 目录</td>
+            <td class="py-2.5 px-4 text-sm text-gray-600">长期运行后文件数增多，目前无清理机制</td>
+        </tr></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script>
+// Tab 切换
+const ALL_TABS = ['overview','arch','deps','modules','contracts','report','health'];
+function showTab(name) {
+  ALL_TABS.forEach(t => {
+    const pane = document.getElementById('pane-' + t);
+    const btn = document.getElementById('tab-' + t);
+    if (pane) pane.classList.toggle('hidden', t !== name);
+    if (btn) btn.classList.toggle('active', t === name);
+  });
+  // 架构图 tab 首次可见时渲染 Mermaid（hidden 状态下无法渲染）
+  if (name === 'arch') _runMermaid();
+}
+
+// 模块导航
+function showModule(slug) {
+  document.querySelectorAll('.module-pane').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.module-nav-btn').forEach(el => {
+    el.classList.remove('bg-blue-600', 'text-white');
+    el.classList.add('text-gray-600');
+  });
+  const pane = document.getElementById('mod-' + slug);
+  if (pane) pane.classList.remove('hidden');
+  const btn = document.getElementById('nav-' + slug);
+  if (btn) { btn.classList.add('bg-blue-600', 'text-white'); btn.classList.remove('text-gray-600'); }
+}
+
+// 契约层导航
+function showLayer(tabId) {
+  document.querySelectorAll('.layer-pane').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.layer-nav-btn').forEach(el => {
+    el.classList.remove('border-b-2', 'border-blue-600', 'text-blue-700', 'font-semibold');
+    el.classList.add('text-gray-500');
+  });
+  const pane = document.getElementById('layer-' + tabId);
+  if (pane) pane.classList.remove('hidden');
+  const btn = document.getElementById('layernav-' + tabId);
+  if (btn) {
+    btn.classList.add('border-b-2', 'border-blue-600', 'text-blue-700', 'font-semibold');
+    btn.classList.remove('text-gray-500');
+  }
+}
+
+// 架构图子 Tab — Mermaid 懒渲染辅助函数
+var _mermaidRendered = {};
+
+// 渲染前缓存 .mermaid 原始源码到 dataset.mermaidSrc，防止 mermaid.run() 替换 innerHTML 后丢失源码
+function cacheMermaidSources(root) { var scope = root || document; scope.querySelectorAll('.mermaid').forEach(function(node) { if (node.dataset.mermaidSrc) return; if (node.querySelector('svg')) return; var raw = (node.textContent || '').trim(); if (raw) node.dataset.mermaidSrc = raw; }); }
+
+// 判断节点是否曾被 mermaid.run() 标记为 processed 但未成功渲染（无 svg）
+function mermaidNodeNeedsRetry(node) { if (!node) return false; return node.getAttribute('data-processed') === 'true' && !node.querySelector('svg'); }
+
+// 清除已处理标记、还原源码、重新渲染单个节点
+async function rerenderMermaidNode(node) { if (!node || typeof mermaid === 'undefined') return; cacheMermaidSources(node.parentElement || document); var src = node.dataset.mermaidSrc; if (!src) return; node.removeAttribute('data-processed'); node.textContent = src; await mermaid.run({ nodes: [node] }); }
+
+// 渲染一个子Tab pane 内的所有 .mermaid 节点，forceReset=true 时先清除旧状态再渲染
+async function renderArchPaneMermaid(pane, forceReset) { if (typeof mermaid === 'undefined' || !pane) return false; cacheMermaidSources(pane); var nodes = Array.from(pane.querySelectorAll('.mermaid')); if (!nodes.length) return true; try { if (forceReset) { for (var i = 0; i < nodes.length; i++) await rerenderMermaidNode(nodes[i]); } else { await mermaid.run({ nodes: nodes }); } return true; } catch(err) { console.error('Mermaid render failed:', err); return false; } }
+
+async function showArchTab(tabId) {
+  document.querySelectorAll('.arch-tab-pane').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.arch-tab-btn').forEach(el => el.classList.remove('active-arch-tab'));
+  const pane = document.getElementById(tabId);
+  if (pane) pane.classList.remove('hidden');
+  const btn = document.getElementById('btn-' + tabId);
+  if (btn) btn.classList.add('active-arch-tab');
+  if (typeof mermaid === 'undefined' || !pane) return; var firstRender = !_mermaidRendered[tabId]; var retryNeeded = Array.from(pane.querySelectorAll('.mermaid')).some(mermaidNodeNeedsRetry); if (!firstRender && !retryNeeded) return; var ok = await renderArchPaneMermaid(pane, firstRender || retryNeeded); if (ok) _mermaidRendered[tabId] = true;
+}
+
+// Marked.js 渲染所有 markdown
+function renderAllMarkdown() {
+  if (typeof marked === 'undefined') return;
+  marked.setOptions({ gfm: true, breaks: false });
+  document.querySelectorAll('.markdown-src').forEach(srcEl => {
+    const outEl = srcEl.nextElementSibling;
+    if (outEl && outEl.classList.contains('markdown-out')) {
+      outEl.innerHTML = marked.parse(srcEl.textContent);
+    }
+  });
+}
+
+mermaid.initialize({ startOnLoad: false, theme: 'neutral', flowchart: { curve: 'basis', padding: 20 } });
+cacheMermaidSources(document);
+
+// 点击架构图 Tab 时只渲染当前可见的子Tab，不全量渲染（全量会跳过 display:none 元素并打上 processed 标记）
+var _mermaidDone = false;
+async function _runMermaid() {
+  if (_mermaidDone || typeof mermaid === 'undefined') return; var pane = document.querySelector('#pane-arch .arch-tab-pane:not(.hidden)'); if (!pane) return; var ok = await renderArchPaneMermaid(pane, true); if (!ok) return; _mermaidDone = true; if (pane.id) _mermaidRendered[pane.id] = true;
+}
+
+window.addEventListener('DOMContentLoaded', renderAllMarkdown);
+</script>
+</body>
+</html>

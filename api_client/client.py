@@ -14,8 +14,24 @@ import psutil
 import threading
 from threading import Thread
 import multiprocessing
-import fcntl
+import sys
 import json
+
+# Cross-platform file locking: use fcntl on Unix, portalocker on Windows
+if sys.platform == 'win32':
+    import portalocker
+    class _fcntl:
+        LOCK_EX = portalocker.LOCK_EX
+        LOCK_UN = portalocker.LOCK_UN
+        @staticmethod
+        def flock(f, operation):
+            if operation == portalocker.LOCK_EX:
+                portalocker.lock(f, portalocker.LOCK_EX)
+            else:
+                portalocker.unlock(f)
+    fcntl = _fcntl()
+else:
+    import fcntl
 from litellm import RateLimitError
 
 class RateLimiter:
@@ -234,6 +250,7 @@ class Client:
             "messages": messages,
             "temperature": self.temperature,
             "no-log": True,
+            "api_key": session_key,  # Pass key explicitly so litellm doesn't rely on env-var lookup
             **kwargs
         }
 

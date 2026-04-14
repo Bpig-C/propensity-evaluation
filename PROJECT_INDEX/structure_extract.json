@@ -1,0 +1,160 @@
+{
+  "routes": [],
+  "paths": [],
+  "urls": [],
+  "classes": [
+    {
+      "file": "api_client\\api_conf.py",
+      "class": "APIConfiguration",
+      "bases": ""
+    },
+    {
+      "file": "api_client\\client.py",
+      "class": "RateLimiter",
+      "bases": ""
+    },
+    {
+      "file": "api_client\\client.py",
+      "class": "Client",
+      "bases": ""
+    },
+    {
+      "file": "evaluation\\agent.py",
+      "class": "Agent",
+      "bases": ""
+    },
+    {
+      "file": "evaluation\\executor.py",
+      "class": "Executor",
+      "bases": ""
+    },
+    {
+      "file": "evaluation\\main.py",
+      "class": "PropensityEvaluator",
+      "bases": ""
+    },
+    {
+      "file": "evaluation\\main.py",
+      "class": "QueueStream",
+      "bases": ""
+    },
+    {
+      "file": "evaluation\\validation_executor.py",
+      "class": "ValidationExecutor",
+      "bases": ""
+    },
+    {
+      "file": "utils\\colors.py",
+      "class": "BaseColoredFormatter",
+      "bases": "logging.Formatter"
+    },
+    {
+      "file": "generation\\pipeline\\base.py",
+      "class": "BasePipeline",
+      "bases": "abc.ABC"
+    },
+    {
+      "file": "generation\\pipeline\\messages_pipeline.py",
+      "class": "PipelineMessages",
+      "bases": "BasePipeline"
+    },
+    {
+      "file": "generation\\pipeline\\scenarios_pipeline.py",
+      "class": "PipelineScenarios",
+      "bases": "BasePipeline"
+    },
+    {
+      "file": "generation\\pipeline\\modules\\graph_utils.py",
+      "class": "SimilarityGraph",
+      "bases": ""
+    },
+    {
+      "file": "generation\\pipeline\\modules\\scenario_utils_funcs.py",
+      "class": "ScenarioManager",
+      "bases": ""
+    },
+    {
+      "file": "generation\\pipeline\\modules\\scenario_utils_messages.py",
+      "class": "ScenarioManager",
+      "bases": ""
+    },
+    {
+      "file": "generation\\pipeline\\modules\\scenario_utils_messages_single.py",
+      "class": "MessagesScenarioManager",
+      "bases": ""
+    },
+    {
+      "file": "generation\\pipeline\\modules\\scenario_utils_policies.py",
+      "class": "ScenarioManager",
+      "bases": ""
+    },
+    {
+      "file": "generation\\pipeline\\modules\\scenario_utils_states.py",
+      "class": "AttackVectorsPoolManager",
+      "bases": ""
+    },
+    {
+      "file": "generation\\pipeline\\modules\\scenario_utils_states.py",
+      "class": "ScenarioManager",
+      "bases": ""
+    }
+  ],
+  "cli_args": [
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--input_dir"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--output_dir"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--log_dir"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "-p"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "-m"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--api_base"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--use_benign"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--validation_mode"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--max_workers"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--no-contd"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "-t"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "-j"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--task_id"
+    },
+    {
+      "file": "evaluation\\main.py",
+      "arg": "--total_tasks"
+    }
+  ]
+}
