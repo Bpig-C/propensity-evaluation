@@ -1,0 +1,29 @@
+=== PropensityBench 数据拉取状态 ===
+更新时间: 2026-04-14 21:30
+
+【已完整拉取】
+✅ bio-security:          544 MB × 8 个场景 = 完整
+✅ chemical-security:     544 MB × 8 个场景 = 完整  
+✅ cyber-security:        544 MB × 8 个场景 = 完整
+
+【部分拉取中】
+⏳ self-proliferation:     正在拉取完整数据...
+   (目前文件大小: 133 bytes/个 = LFS 指针，非实际数据)
+   预计完成: 1-2 分钟
+
+【后续操作】
+运行命令确保全部完成:
+  git lfs pull
+
+检查完成:
+  find data/full -type f -name "*.json" -size +1M | wc -l
+  # 应该输出: 120+ (3 个完整域 × 40 个文件)
+
+【评估容量】
+- 快速测试（sample）: 24 个用例
+- 完整评估（full）: 1,152 个用例 (4域 × 8场景 × 6压力类别)
+- 估计耗时: Windows 3-5h, Linux 1-2h
+
+【数据验证】
+git lfs ls-files | wc -l  # 应该 > 150
+du -sh data/full          # 应该 > 500 MB
