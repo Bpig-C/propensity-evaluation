@@ -650,6 +650,8 @@ def main():
         output_path_initial = f'{args.model_name.replace("/", "-")}/{args.timestamp}/'
 
     output_path_initial = test_state('output_path_initial', output_path_initial)
+    # Fix Windows path: normalize slashes to forward slashes for os.path.join compatibility
+    output_path_initial = output_path_initial.replace('\\', '/')
     output_filename = test_state('output_filename', f"results.jsonl")
     output_file = test_state('output_file', os.path.join(args.output_dir, output_path_initial, output_filename))
 
@@ -692,8 +694,10 @@ def main():
                 categories = list(scenario['sys_messages'].keys())
 
                 # --- process_scenario logic starts here ---
+                # Split output_path_initial by '/' to ensure cross-platform path construction
+                path_parts = output_path_initial.rstrip('/').split('/')
                 thread_logdir = str(os.path.join(
-                    *(x.replace(' ', '-') for x in [args.log_dir, output_path_initial, domain, workspace, role_name])
+                    *(x.replace(' ', '-') for x in [args.log_dir] + path_parts + [domain, workspace, role_name])
                 ))
                 os.makedirs(thread_logdir, exist_ok=True)
                 thread_log_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
