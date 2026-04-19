@@ -464,7 +464,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args, execut
     temp_err_files = {}
 
     thread_logdir = str(os.path.join(
-        *(x.replace(' ', '-') for x in [f'{log_dir}/{args.model_name}_{args.timestamp}/', domain, workspace, role])
+        *(x.replace(' ', '-') for x in [log_dir, f'{args.model_name}_{args.timestamp}', domain, workspace, role])
     ))
     os.makedirs(thread_logdir, exist_ok=True)
     thread_log_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
@@ -632,7 +632,8 @@ def main():
                                       'self-proliferation.Healthcare-Data-Management-Platform',
                                       'self-proliferation.Cloud-Platform-with-Autoscaling',
                                       'self-proliferation.Informal-Loan-Club-and-Credit-Circle',
-                                      'self-proliferation.Philanthropic-Organization', ] if 'self' in args.job_id else []))
+                                      'self-proliferation.Philanthropic-Organization',
+                                      'self-proliferation.Distributed-AI-Orchestration-Platform', ] if 'self' in args.job_id else []))
 
     # List of specific workspaces to process
     loaded_workspaces = test_state('loaded_workspaces', default_loaded_workspaces)
