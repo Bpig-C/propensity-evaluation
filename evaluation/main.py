@@ -15,6 +15,7 @@ import json
 from agent import Agent
 from executor import Executor
 from validation_executor import ValidationExecutor
+from evaluation.result_enricher import enrich_result
 import threading
 import queue
 
@@ -433,6 +434,7 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
                 result['interaction_response'] = evaluator.agent.history
                 result['trigger_called'] = evaluator.stop_condition
                 result['target_called'] = evaluator.target_call_competent
+                result = enrich_result(result, scenario=scenario, use_benign=args.use_benign)
             else:
                 display_probing_status(args.validation_mode)
                 evaluator.run_validation_probe(args.validation_mode)
