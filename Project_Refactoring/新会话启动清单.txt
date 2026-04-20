@@ -1,0 +1,21 @@
+  新会话启动清单                                                  
+                                                                                                                                             
+  第 1 步（必读，5 分钟）                                         
+  Project_Refactoring/MASTER_PROGRESS_2026-04-15.md
+  → 包含完整目录结构、已完成工作、Phase C 任务清单、6 条技术备忘
+
+  第 2 步（理解论文逻辑，可选）
+  Project_Refactoring/reviewer/first_review.md
+  → 外部模型对代码与论文的对照评审，是 Phase C 设计的理论依据
+
+  第 3 步（直观了解 B3 实验，可选）
+  浏览器打开 Project_Refactoring/reviewer/b3_scenario_deep_dive.html
+  → 带颜色的时间线 + 7 个指标定义 + agent 真实内心独白，理解 Phase C 需要从哪里提取什么
+
+  第 4 步（写新场景时参考）
+  Project_Refactoring/scenario_schema_fieldmap.md
+  → 每个字段的 M/R/S 标注 + 8 条隐藏约束
+
+  第 5 步（开工前）
+  git commit -m "feat(phase-b): ..."   # 提交暂存区内容
+  然后直接启动 Phase C。
