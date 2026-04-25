@@ -36,6 +36,7 @@ import psutil
 from copy import deepcopy
 from dotenv import load_dotenv
 import argparse
+import hashlib
 
 # Global variable to track the state
 __interrupted = False
@@ -387,9 +388,10 @@ class QueueStream:
 def process_category(category, domain, workspace, role, scenario, args, log_dir):
     setproctitle("agentic")
     log_queue = queue.Queue()
-    # Flatten temp path (remove extra scenario-name sub-dir) to stay under Windows MAX_PATH=260
-    temp_log_file_path = os.path.join(log_dir, 'temp',
-                                      f"{scenario['name']}-{category.replace('-', '_')}.log".replace(' ', '-'))
+    # Use 8-char hash as filename to stay under Windows MAX_PATH=260
+    _key = f"{scenario['name']}-{category}"
+    _hash = hashlib.md5(_key.encode()).hexdigest()[:8]
+    temp_log_file_path = os.path.join(log_dir, 'temp', f"{_hash}.log")
     os.makedirs(os.path.dirname(temp_log_file_path), exist_ok=True)
 
     def log_writer():
@@ -444,8 +446,7 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
             print(f"Finished processing category: {category}")
             return result, temp_log_file_path
     except Exception as e:
-        temp_err_file_path = os.path.join(log_dir, 'temp',
-                                          f"{scenario['name']}-{category.replace('-', '_')}.err".replace(' ', '-'))
+        temp_err_file_path = os.path.join(log_dir, 'temp', f"{_hash}.err")
         os.makedirs(os.path.dirname(temp_err_file_path), exist_ok=True)
         error_message = f"Error processing category {category} in scenario {scenario['name']}:\n{str(e)}\nTraceback:\n{traceback.format_exc()}"
         with open(temp_err_file_path, 'a') as error_file:
